@@ -1,0 +1,1283 @@
+if not LPH_OBFUSCATED then
+	LPH_JIT = function(...)
+		return ...
+	end
+	LPH_JIT_MAX = function(...)
+		return ...
+	end
+	LPH_JIT_ULTRA = function(...)
+		return ...
+	end
+	LPH_NO_VIRTUALIZE = function(...)
+		return ...
+	end
+	LPH_NO_UPVALUES = function(f)
+		return function(...)
+			return f(...)
+		end
+	end
+	LPH_ENCSTR = function(...)
+		return ...
+	end
+	LPH_STRENC = function(...)
+		return ...
+	end
+	LPH_HOOK_FIX = function(...)
+		return ...
+	end
+	LPH_CRASH = function()
+		return print(debug.traceback())
+	end
+end
+--
+local wrap = LPH_NO_VIRTUALIZE(function(f)
+	coroutine.resume(coroutine.create(f))
+end)
+--
+local modules = {}
+for _, v in ipairs(getgc(true)) do
+    if typeof(v) == "function" and islclosure(v) then
+        local src = debug.info(v, "s")
+        local name = debug.info(v, "n")
+        if src:find(".BowSpecial") and name == "update" then
+            modules.Character = debug.getupvalue(v, 13)
+            modules.Camera = debug.getupvalue(v, 15)
+            modules.Network = debug.getupvalue(v, 19)
+        elseif src:find(".Character") and name == "getGroundCastResult" then
+            modules.FPS = debug.getupvalue(v, 2)
+            modules.FPS2 = debug.getupvalue(v, 3)
+        elseif src:find(".Character") and name == "updateCharacter" then
+            modules.Player  = debug.getupvalue(v, 4)
+            modules.Player2 = debug.getupvalue(v, 6)
+            modules.Player3 = debug.getupvalue(v, 14)
+            modules.Player4 = debug.getupvalue(v, 15)
+            modules.Player5 = debug.getupvalue(v, 21)
+            modules.Player6 = debug.getupvalue(v, 28)
+            modules.Player7 = debug.getupvalue(v, 32)
+        end
+    end
+end
+--
+local OsClock = os.clock()
+local drawing = getgenv().Drawing
+local workspace,camera = cloneref(game:GetService("Workspace")),workspace.CurrentCamera
+local UIS, RS, ReplicatedStorage = cloneref(game:GetService("UserInputService")), cloneref(game:GetService("RunService")), cloneref(game:GetService("ReplicatedStorage"))
+--
+do
+    local Library = loadstring(request({Url='https://raw.githubusercontent.com/some1strange/cracks/refs/heads/main/patrickpaste/library',Method='GET'}).Body)();
+    --
+    local Tabs = {
+    main = Library:addTab("main", ""),
+    visuals = Library:addTab("visuals", ""),
+    misc = Library:addTab("misc", ""), 
+    world = Library:addTab("world", ""), 
+    settings = Library:addTab("settings", "")
+    }
+--
+local Create = function(className, properties)
+    local success, object = pcall(Drawing.new, className)
+    if not success or not object then return nil end
+    for prop, value in next, properties or {} do
+        if pcall(function() object[prop] = value end) == false then
+            warn("[Create] Invalid property:", prop)
+        end
+    end
+    return object
+end
+--
+local VisualsWTFConfig = {
+    hbcheck = false;
+    invistoggle = false;
+    Resolver = false;
+    silent = false;
+    jumpshoot = false;
+    noslowdown = false;
+    magicbullet = false;
+    norecoil = false;
+    hitchance = 100;
+    HbOverider = false;
+    BackPackEsp = false;
+    ClaimTotemEsp = false;
+    DroppedItemEsp = false;
+    TransportCrateEsp = false;
+    MetalCrateEsp = false;
+    LootSafeEsp = false;
+    CabinetEsp = false;
+    BearTrapEsp = false;
+    NitrateOreEsp = false;
+    TeslaPylonEsp = false;
+    PartsBoxEsp = false;
+    IronOreEsp = false;
+    StoneOreEsp = false;
+    MagicDestroy = false;
+    DinkHitSound = false;
+    Manipulation = {
+        Enabled = false;
+        Angles = 15;
+        Radius = 4;
+        Direction = "Normal";
+        Vector = Vector3.new(0, 0, 0);
+    };
+}
+-- 
+do --[ replacements
+    do --[ siletaim
+        local fov_circle = Create("Circle", {Radius = 300, Color = Color3.fromRGB(45, 116, 202), Visible = true})
+        local Line = Create("Line", {Color = Color3.fromRGB(255,255,255), Visible = true, Thickness = 1.3, ZIndex = 3})
+        local LineO = Create("Line", {Color = Color3.fromRGB(0,0,0), Visible = true, Thickness = 3, ZIndex = 2})
+        local text = Create("Text", {Text = "Visuals.wtf - Free Version", Size = 22, Color = Color3.fromRGB(255,255,255), Outline = true, OutlineColor = Color3.fromRGB(0,0,0), Visible = true})
+        local BackPackText = Create("Text", { Text = "BackPack", Size = 22, Color = Color3.fromRGB(255, 255, 255), Outline = true, OutlineColor = Color3.fromRGB(0, 0, 0), Visible = false })
+        local InvisibleText = Create("Text", {Text = "Invisible", Size = 17, Color = Color3.fromRGB(255, 255, 255), Outline = true, OutlineColor = Color3.fromRGB(0, 0, 0), Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X - 190, workspace.CurrentCamera.ViewportSize.Y / 2 + 5), Center = false,  Visible = false })
+        local ManipText = Create("Text", { Text = "Manipulating", Size = 17, Color = Color3.fromRGB(255, 255, 255), Outline = true, OutlineColor = Color3.fromRGB(0, 0, 0), Center = true, Visible = false })
+        --
+        local camera = workspace.CurrentCamera
+        local cam, RS, UIS = workspace.CurrentCamera, game:GetService("RunService"), game:GetService("UserInputService")
+        local screenCenter = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+        local touchenabled, hue, speed = UIS.TouchEnabled, 0, 0.7
+        --
+        local function getBestTarget()
+            local t, d = nil, math.huge
+            for _, v in next, debug.getupvalue(modules.Player3.GetPlayerModel, 1) do
+                local h = v and v.model and v.model:FindFirstChild("Head")
+                if h and not v.sleeping then
+                    local p, o = cam:WorldToViewportPoint(h.Position)
+                    if o then
+                        local dist = (Vector2.new(p.X, p.Y) - screenCenter).Magnitude
+                        if dist < d then t, d = v, dist end
+                    end
+                end
+            end
+            return t
+        end
+        --
+        RS.RenderStepped:Connect(LPH_NO_VIRTUALIZE(function(dt)
+            screenCenter = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+            hue = (hue + dt * speed * 100) % 360
+            local col = Color3.fromHSV(hue / 360, 1, 1)
+            text.Color, fov_circle.Color = col, col
+            fov_circle.Position = touchenabled and screenCenter or UIS:GetMouseLocation()
+            local bounds = text.TextBounds
+            text.Position = Vector2.new((cam.ViewportSize.X - bounds.X) / 2, 10)
+            InvisibleText.Color = col
+            ManipText.Color = col
+            ManipText.Position = screenCenter
+            --
+            local s = screenCenter
+            local i = workspace:FindFirstChild("Ignore")
+            local m = i and i:FindFirstChild("FPSArms") and i.FPSArms:FindFirstChild("HandModel") and i.FPSArms.HandModel:FindFirstChild("Muzzle")
+            if m then local p, o = cam:WorldToViewportPoint(m.Position) if o then s = Vector2.new(p.X, p.Y) end end
+            --
+            local t = getBestTarget()
+            getgenv().SilentTarget = t
+            local h = t and t.model and t.model:FindFirstChild("Head")
+            if h then
+                local p, o = cam:WorldToViewportPoint(h.Position)
+                if o then
+                    local to = Vector2.new(p.X, p.Y)
+                    Line.From, LineO.From, Line.To, LineO.To = s, s, to, to
+                    Line.Color = col
+                    Line.Visible, LineO.Visible = true, true
+                else
+                    Line.Visible, LineO.Visible = false, false
+                end
+            else
+                Line.Visible, LineO.Visible = false, false
+            end
+        end))        
+        --        
+        local RunService = game:GetService("RunService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local camera = workspace.CurrentCamera
+        
+        local ProjectileDrop = LPH_NO_VIRTUALIZE(function()
+            local mod = modules.FPS.GetEquippedItem()
+            if not mod or not mod.id then
+                return 0, 0
+            end
+            local itemConfig = require(ReplicatedStorage.ItemConfigs[mod.id])
+            return mod.id, itemConfig.ProjectileSpeed, itemConfig.ProjectileDrop
+        end)
+        --
+        local Prediction = function(origin, target, speed, drop, velocity, startPos, goalPos, prog, curPos, goalAX, startAX, goalAY, startAY)
+            local displacement = target - origin
+            local dist = displacement.Magnitude
+            local t = dist / speed
+            local y = target.Y + (drop ^ (t * drop)) - 1
+            local move = velocity * t
+            return Vector3.new(target.X + move.X, y, target.Z + move.Z)
+        end
+        --
+        modules.Camera.Silentaim = function()
+            local origin = modules.Camera.GetCFrame()
+            local target = getgenv().SilentTarget
+            local id, speed, drop = ProjectileDrop()
+            if target and id and VisualsWTFConfig.silent and target.model and target.model.Head then
+                local predictedPosition = Prediction(origin.Position, target.model.Head.Position, speed, drop, target.velocityVector, target.startPosition, target.goalPosition, target.goalProgression, target.currentPosition, target.goalAngleX, target.startAngleX, target.goalAngleY, target.startAngleY)
+                if VisualsWTFConfig.Manipulation.Enabled then
+                    return CFrame.lookAt(origin.Position, predictedPosition) * CFrame.new(VisualsWTFConfig.Manipulation.Vector)
+                else
+                    return CFrame.lookAt(origin.Position, predictedPosition)
+                end
+            end
+            return origin
+        end      
+        --
+        local S1lent = Tabs.main:createGroup('left', 'Silent Aim')
+        --
+        S1lent:addToggle({text = "Silent Aim",default = false,flag = "silent",callback = function(state)
+            VisualsWTFConfig.silent = state
+        end})
+        --
+        S1lent:addToggle({text = "Fov Circle",default = false,flag = "fov_circle",callback = function(state)
+            fov_circle.Visible = state
+        end})
+        --
+        S1lent:addSlider({text = "Fov Radius", min = 0, max = 1500, suffix = "%", float = 1, default = 0, flag = "fov_radius",callback = function(Value)
+            fov_circle.Radius = Value
+        end})
+        --
+        getgenv().Hb_Bypass = false
+        local Vector_zero = Vector3.new(0, 0, 0) 
+        --
+        local hb_bypassed; hb_bypassed = hookfunction(game:GetService("Players").LocalPlayer.RemoteEvent.FireServer, newcclosure(function(self, ...)
+            local args = {...}
+            if args[1] == 10 and args[2] == "Fire" then
+                local Closest_Player = getgenv().SilentTarget
+                if getgenv().Hb_Bypass and Closest_Player and Closest_Player.model and Closest_Player.model.Head then
+                        local id, speed, drop = ProjectileDrop()
+                        local origin = modules.Camera.GetCFrame()
+                        local target_pred_pos = Prediction(modules.Camera.GetCFrame().Position, Closest_Player.model.Head.Position, speed, drop, Closest_Player.velocityVector, Closest_Player.startPosition, Closest_Player.goalPosition, Closest_Player.goalProgression, Closest_Player.currentPosition, Closest_Player.goalAngleX, Closest_Player.startAngleX, Closest_Player.goalAngleY, Closest_Player.startAngleY)
+                        if Closest_Player.id and Closest_Player.pos then
+                            local Calc_distance = (workspace.CurrentCamera.CFrame.p - Closest_Player.pos).Magnitude
+                            if Calc_distance < closest_Distance then
+                                closest_Distance = Calc_distance
+                                Target_ID = Closest_Player.id
+                                Velocity_Vector = Closest_Player.velocityVector
+                            end
+                        end
+                    local id2, speed2, drop2 = ProjectileDrop()
+                    local time_to_hit = (workspace.CurrentCamera.CFrame.p - target_pred_pos).Magnitude / (speed2 or 1)
+                    args[4] = CFrame.new(args[4].p, target_pred_pos)
+                elseif args[1] == 10 and args[2] == "Hit" then
+                    args[8] = Vector3.new(args[8].X, Closest_Player.model.Head.Position, args[8].Z)
+                    warn(args[8])
+                    return hb_bypassed(self, unpack(args))
+                end
+            end
+            return hb_bypassed(self, ...)
+        end))
+        --
+        local playerhitsound = function()
+            local sound = Instance.new("Sound")
+            sound.SoundId = "rbxassetid://988593556"
+            sound.Volume = 1.5
+            sound.PlaybackSpeed = 1
+            sound.RollOffMaxDistance = 10000
+            sound.Parent = cloneref(game:GetService("SoundService"))
+            sound:Play()
+            sound.Ended:Connect(function()
+                sound:Destroy()
+            end)
+        end
+        --
+        local accessing = false
+        local o; o = hookfunction(game.Players.LocalPlayer.RemoteEvent.FireServer, LPH_NO_VIRTUALIZE(function(s, ...)
+            local a = { ... }
+            if a[1] == 10 and a[2] == "Hit" and (a[6] == "Torso" or a[6] == "Head") and VisualsWTFConfig.HbOverider then
+                a[6] = "Head"
+                a[7] = Vector3.zero
+                if VisualsWTFConfig.DinkHitSound then
+                    playerhitsound()
+                end
+                return o(s, unpack(a))
+            elseif a[1] == 1 and VisualsWTFConfig.hbcheck and not accessing then
+                a[4] = 1e99  
+                return o(s, unpack(a))
+            end
+            return o(s, ...)
+        end))
+        --
+        local f; f = hookfunction(game.Players.LocalPlayer.RemoteEvent.FireServer, LPH_NO_VIRTUALIZE(function(s, ...)
+            local b = { ... }
+            if b[1] == 16 and (b[3] == "Access") and not touchenabled then
+                accessing = true
+                task.wait(0.01)
+                keypress(0x45)
+                keyrelease(0x45)
+                task.wait(0.01)
+                accessing = false
+            elseif b[1] == 16 and b[3] == "Pickup" and not touchenabled then
+                accessing = true
+                task.wait(0.01)
+                keypress(0x45)
+                keypress(0x01)
+                wait(0.001)
+                keyrelease(0x45)
+                keyrelease(0x01)
+                task.wait(0.01)
+                accessing = false
+            elseif b[1] == 16 and b[3] == "Craft" and not touchenabled then
+                accessing = true
+                task.wait(0.01)
+                keypress(0x45)
+                keyrelease(0x45)
+                task.wait(0.01)
+                accessing = false
+            elseif b[1] == 16 and b[3] == "Open" and not touchenabled then
+                accessing = true
+                task.wait(0.01)
+                keypress(0x45)
+                keyrelease(0x45)
+                task.wait(0.01)
+                accessing = false
+            elseif b[1] == 16 and b[3] == "Use" and not touchenabled then
+                accessing = true
+                task.wait(0.01)
+                keypress(0x45)
+                keyrelease(0x45)
+                task.wait(0.01)
+                accessing = false
+            elseif b[1] == 16 and b[3] == "Name" and not touchenabled then
+                accessing = true
+                task.wait(0.01)
+                keypress(0x45)
+                keyrelease(0x45)
+                task.wait(0.01)
+                accessing = false
+            end
+            return f(s, ...)
+        end))
+        --
+        local invismods = Tabs.misc:createGroup('right', 'Special Mods')
+        --
+        invismods:addToggle({text = "Invisible", default = true, flag = "Invisible_Toggle", callback = function(state)
+            VisualsWTFConfig.invistoggle = state
+        end}):addKeybind({text = "Invisible Bind", type = "toggle", key = Enum.KeyCode.Q, flag = "Invisible_bind", callback = function(state)
+            if VisualsWTFConfig.invistoggle then 
+                VisualsWTFConfig.hbcheck = not VisualsWTFConfig.hbcheck
+                InvisibleText.Visible = VisualsWTFConfig.hbcheck
+            end
+        end})
+        --
+        invismods:addToggle({text = "Dink HitSound",default = false,flag = "Dink_HitSound",callback = function(state)
+            VisualsWTFConfig.DinkHitSound = state
+        end})
+        --
+        local HBE = Tabs.main:createGroup('right', 'Hitbox Expander')
+        local hitboxEnabled, width, height, collide, transparency = false, 25, 25, false, 0.5
+        local CacheTorso, OldTarget = {}, nil
+        
+        game:GetService("RunService").Heartbeat:Connect(LPH_NO_VIRTUALIZE(function()
+            if not hitboxEnabled then return end
+            local cur = getgenv().SilentTarget
+        
+            if OldTarget and OldTarget ~= cur then
+                local oldTorso = OldTarget.model and OldTarget.model:FindFirstChild("Torso")
+                if oldTorso and CacheTorso[oldTorso] then
+                    local c = CacheTorso[oldTorso]
+                    oldTorso.Size, oldTorso.CanCollide, oldTorso.Transparency = c[1], c[2], c[3]
+                    CacheTorso[oldTorso] = nil
+                end
+                OldTarget = nil
+            end
+        
+            local torso = cur and cur.model and cur.model:FindFirstChild("Torso")
+            if torso and not cur.sleeping then
+                CacheTorso[torso] = CacheTorso[torso] or {torso.Size, torso.CanCollide, torso.Transparency}
+                torso.Size, torso.CanCollide, torso.Transparency = Vector3.new(width, height, width), collide, transparency
+                OldTarget = cur
+            end
+        end))              
+        --
+        HBE:addToggle({text = "Hitbox Enabled",default = false,flag = "hitbox_enabled",callback = function(state)
+            hitboxEnabled = state
+        end})
+        --
+        HBE:addToggle({text = "Hitbox CanCollide",default = false,flag = "hitbox_CanCollide",callback = function(state)
+            collide = state
+        end})
+        --
+        HBE:addToggle({text = "Force Head",default = false,flag = "force_head",callback = function(state)
+            VisualsWTFConfig.HbOverider = state
+        end})
+        --
+        HBE:addToggle({text = "Massive Size Bypass",default = false,flag = "massive_size_bypass",callback = function(state)
+            getgenv().Hb_Bypass = state
+        end})
+        --
+        HBE:addSlider({text = "Hitbox Width", min = 1, max = 100, suffix = "%", float = 1, default = 1, flag = "Width",callback = function(Value)
+            width = Value
+        end})
+        --
+        HBE:addSlider({text = "Hitbox Height", min = 1, max = 30, suffix = "%", float = 1, default = 1, flag = "Height",callback = function(Value)
+            height = Value
+        end})
+        --
+        HBE:addSlider({text = "Hitbox Transparency", min = 0, max = 1, suffix = "%", float = 0.1, default = 0.5, flag = "hitbox_Teransparency",callback = function(Value)
+            transparency = Value
+        end})
+        --
+        local cam = workspace.CurrentCamera
+        local backpacks = {}
+        local claimTotems = {}
+        local droppedItems = {} 
+        --
+        local function update()
+        local activeBackpackIds = {}
+        local activeTotemIds = {}
+        local activeDroppedItemIds = {}
+        for _, v in pairs(modules.Player4.List) do
+            if v.typ == "Backpack" and v.model and v.model:FindFirstChild("Part") and VisualsWTFConfig.BackPackEsp then
+                activeBackpackIds[v.id] = true
+                if not backpacks[v.id] then
+                    backpacks[v.id] = Create("Text", {Text = "[BODY BAG]", Size = 13, Color = Color3.fromRGB(255, 150, 0), Center = true, Outline = true, Font = 2, Visible = false})
+                end
+                local dist = math.floor((cam.CFrame.Position - v.model.Part.Position).Magnitude)
+                local pos, onScreen = cam:WorldToViewportPoint(v.model.Part.Position)
+                backpacks[v.id].Text = "Body Bag [ " .. dist .. " ]"
+                backpacks[v.id].Position = Vector2.new(pos.X, pos.Y)
+                backpacks[v.id].Visible = onScreen
+            end
+        end
+        for _, v in pairs(modules.Player4.List) do
+            if v.typ == "ClaimTotem" and v.model and v.model:FindFirstChild("Part") and VisualsWTFConfig.ClaimTotemEsp then
+                activeTotemIds[v.id] = true
+                if not claimTotems[v.id] then
+                    claimTotems[v.id] = Create("Text", {Text = "[CLAIM TOTEM]", Size = 13, Color = Color3.fromRGB(0, 255, 0), Center = true, Outline = true, Font = 2, Visible = false})
+                end
+                local dist = math.floor((cam.CFrame.Position - v.model.Part.Position).Magnitude)
+                local pos, onScreen = cam:WorldToViewportPoint(v.model.Part.Position)
+                claimTotems[v.id].Text = "Claim Totem [ " .. dist .. " ]"
+                claimTotems[v.id].Position = Vector2.new(pos.X, pos.Y)
+                claimTotems[v.id].Visible = onScreen
+            end
+        end
+        for _, v in pairs(modules.Player4.List) do
+            if v.typ == "DroppedItem" and v.model and v.model:FindFirstChild("Part") and VisualsWTFConfig.DroppedItemEsp then
+                activeDroppedItemIds[v.id] = true
+                if not droppedItems[v.id] then
+                    droppedItems[v.id] = Create("Text", {Text = "[DROPPED ITEM]", Size = 13, Color = Color3.fromRGB(255, 0, 0), Center = true, Outline = true, Font = 2, Visible = false})
+                end
+                local dist = math.floor((cam.CFrame.Position - v.model.Part.Position).Magnitude)
+                local pos, onScreen = cam:WorldToViewportPoint(v.model.Part.Position)
+                droppedItems[v.id].Text = "Dropped Item [ " .. dist .. " ]"
+                droppedItems[v.id].Position = Vector2.new(pos.X, pos.Y)
+                droppedItems[v.id].Visible = onScreen
+            end
+        end
+        for id, text in pairs(backpacks) do
+            if not activeBackpackIds[id] then
+                text:Remove()
+                backpacks[id] = nil
+            end
+        end
+        for id, text in pairs(claimTotems) do
+            if not activeTotemIds[id] then
+                text:Remove()
+                claimTotems[id] = nil
+            end
+        end
+        for id, text in pairs(droppedItems) do
+            if not activeDroppedItemIds[id] then
+                text:Remove()
+                droppedItems[id] = nil
+            end
+        end
+        end
+        --
+        game:GetService("RunService").RenderStepped:Connect(update)
+        workspace.ChildAdded:Connect(update)
+        --
+        modules.Character.Jumpshoot = function()
+            if VisualsWTFConfig.jumpshoot then
+                return true
+            else
+                return modules.Character.IsGrounded()
+            end;
+        end;    
+        --
+        modules.Character.Noslowdown = function(bool)
+            if VisualsWTFConfig.noslowdown then
+                return modules.Character.SetSprintBlocked(false)
+            else
+                return modules.Character.SetSprintBlocked(bool)
+            end;
+        end;    
+        --
+        modules.Network.SendTCP = function(...)
+            local args = {...}
+            return modules.Network.Send(table.unpack(args))
+        end
+        --
+        for _, v in pairs(getgc(true)) do
+            if typeof(v) == "function" and islclosure(v) then
+                local src, name = debug.info(v, "s"), debug.info(v, "n")
+                if src then
+                    if name == "update" then
+                        if src:find("RangedWeapon") then
+                            debug.setconstant(v, 14, "Jumpshoot")
+                            debug.setconstant(v, 13, "Noslowdown")
+                        elseif src:find("BowSpecial") then
+                            debug.setconstant(v, 19, "Jumpshoot")
+                            debug.setconstant(v, 20, "Noslowdown")
+                        elseif src:find("Melee") then
+                            debug.setconstant(v, 14, "Jumpshoot")
+                            debug.setconstant(v, 25, "Noslowdown")
+                        end
+                    elseif name == "createProjectile" and (src:find("RangedWeapon") or src:find("BowSpecial")) then
+                        debug.setconstant(v, 15, "SendTCP")
+                    elseif name == "fire" then
+                        if src:find("RangedWeapon") then
+                            debug.setconstant(v, 27, "Silentaim")
+                        elseif src:find("BowSpecial") then
+                            debug.setconstant(v, 21, "Silentaim")
+                        end
+                    elseif name == "cameraRecoil" and VisualsWTFConfig.norecoil then
+                        debug.setconstant(v, 2, "PC")
+                    end
+                end
+            end
+        end        
+        --
+        local Cmods = Tabs.misc:createGroup('left', 'Character Mods')
+        --
+        Cmods:addToggle({text = "Jump Shoot",default = false,flag = "jumpshoot",callback = function(state)
+            VisualsWTFConfig.jumpshoot = state
+        end})
+        --
+        Cmods:addToggle({text = "NoSlowDown",default = false,flag = "noslowdown",callback = function(state)
+            VisualsWTFConfig.noslowdown = state
+        end})
+        --
+        local Weapmods = Tabs.misc:createGroup('right', 'Weapon Mods')
+        --
+        local Nospread = false
+        local oldAccuracy = nil 
+        --
+        local No_Spread; No_Spread = hookmetamethod(Random.new(), "__namecall", LPH_NO_VIRTUALIZE(function(self, ...)
+            local args = {...}
+            if args[1] == -100 and args[2] == 100 and Nospread then
+                return No_Spread(self, -1, 1)
+            end
+            return No_Spread(self, ...)
+        end))
+        --
+        Weapmods:addToggle({text = "No Spread",default = false,flag = "nospread",callback = function(state)
+            Nospread = state
+        end})
+        Weapmods:addToggle({text = "No Recoil",default = false,flag = "norecoil",callback = function(state)
+            VisualsWTFConfig.norecoil = state
+        end})
+        --
+        local Visualsesp = Tabs.visuals:createGroup('right', 'World Esp')
+        Visualsesp:addToggle({text = "BackPack Esp",default = false,flag = "Back_Pack_Esp",callback = function(state)
+            VisualsWTFConfig.BackPackEsp = state
+        end})
+        Visualsesp:addToggle({text = "ClaimTotem Esp",default = false,flag = "Claim_Totem_Esp",callback = function(state)
+            VisualsWTFConfig.ClaimTotemEsp = state
+        end})
+        Visualsesp:addToggle({text = "DroppedItem Esp",default = false,flag = "Dropped_Item_Esp",callback = function(state)
+            VisualsWTFConfig.DroppedItemEsp = state
+        end})
+        --[[
+        Visualsesp:addToggle({text = "GreenCrate Esp",default = false,flag = "GreenCrate_Esp",callback = function(state)
+            VisualsWTFConfig.TransportCrateEsp = state
+        end})
+        Visualsesp:addToggle({text = "MetalCrate Esp",default = false,flag = "MetalCrate_Esp",callback = function(state)
+            VisualsWTFConfig.MetalCrateEsp = state
+        end})
+        Visualsesp:addToggle({text = "PartsBox Esp",default = false,flag = "PartsBox_Esp",callback = function(state)
+            VisualsWTFConfig.PartsBoxEsp = state
+        end})
+        Visualsesp:addToggle({text = "SupplyDrop Esp",default = false,flag = "SupplyDrop_Esp",callback = function(state)
+            VisualsWTFConfig.SupplyDropEsp = state
+        end})
+        Visualsesp:addToggle({text = "Safe Esp",default = false,flag = "Safe_Esp",callback = function(state)
+            VisualsWTFConfig.LootSafeEsp = state
+        end})
+        Visualsesp:addToggle({text = "Cabinet Esp",default = false,flag = "Cabinet_Esp",callback = function(state)
+            VisualsWTFConfig.CabinetEsp = state
+        end})
+        Visualsesp:addToggle({text = "NitrateOre Esp",default = false,flag = "NitrateOre_Esp",callback = function(state)
+            VisualsWTFConfig.NitrateOreEsp = state
+        end})
+        Visualsesp:addToggle({text = "IronOre Esp",default = false,flag = "IronOre_Esp",callback = function(state)
+            VisualsWTFConfig.IronOreEsp = state
+        end})
+        Visualsesp:addToggle({text = "StoneOre Esp",default = false,flag = "StoneOre_Esp",callback = function(state)
+            VisualsWTFConfig.StoneOreEsp = state
+        end})
+        Visualsesp:addToggle({text = "TeslaPylon Esp",default = false,flag = "TeslaPylon_Esp",callback = function(state)
+            VisualsWTFConfig.TeslaPylonEsp = state
+        end})
+        Visualsesp:addToggle({text = "BearTrap Esp",default = false,flag = "BearTrap_Esp",callback = function(state)
+            VisualsWTFConfig.BearTrapEsp = state
+        end})
+          --]]
+        --
+    end
+    --
+end
+--
+--> Player Visuals // Esp <--
+wait(0.1)
+repeat
+    wait(0.1)
+until game:IsLoaded()
+
+wait(0.5)
+
+local Cache = {}
+local Cache2 = {}
+local CornerBoxes = true
+local WeaponType = true
+local Names = true
+local Bar = true
+local MaxDistance = 1500
+local PlayerList = debug.getupvalue(modules.Player3.GetPlayerModel, 1)
+--
+local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui") if playerGui:FindFirstChild("XDEDEADEDE") then playerGui.XDEDEADEDE:Destroy() end
+--
+local Beamed = { Varis = { RunService = game:GetService("RunService"), Camera = game:GetService("Workspace").CurrentCamera, Lighting = game:GetService("Lighting"), UserInput = game:GetService("UserInputService"), LogService = game:GetService("LogService"), }, }
+--
+local BeamVar = Beamed.Varis
+local VisibilityState = {}
+local BarValue = 100 
+--
+local function CreateClass(Class, Properties) local ClassInt = typeof(Class) == "string" and Instance.new(Class) or Class for Property, Value in next, Properties do ClassInt[Property] = Value end return ClassInt end
+--
+local XDEDEADEDE = CreateClass("ScreenGui", {Parent = playerGui, Name = "XDEDEADEDE"})
+--
+local function DupeCheck(name) local existingESP = XDEDEADEDE:FindFirstChild(name) if existingESP then existingESP:Destroy() end end
+--
+local function IsSleeping(model) if model and model:FindFirstChild("AnimationController") and model.AnimationController:FindFirstChild("Animator") then for _, v in pairs(model.AnimationController.Animator:GetPlayingAnimationTracks()) do if v.Animation.AnimationId == "rbxassetid://13280887764" then return true end end end return false end
+--
+local function Calc(d, maxDistance) return 4 - math.clamp(d / (maxDistance or 200), 0, 1) * 3 end
+--
+local function ESP(playertable) if not playertable then return end local model = playertable.model local humanoidRootPart = model:FindFirstChild("HumanoidRootPart") if not humanoidRootPart then return end
+    --
+    DupeCheck(model.Name)
+    --
+    local function CreateCornerBox(name, position, size, anchorPoint)
+        return CreateClass("Frame", {Parent = XDEDEADEDE, Name = name, BackgroundColor3 = Color3.fromRGB(161,0,219), Position = position, Size = size, AnchorPoint = anchorPoint, Visible = CornerBoxes, ZIndex = 10})
+    end
+    --
+    local function CreateBar(name, position, size)
+        return CreateClass("Frame", {Parent = XDEDEADEDE, Name = name, BackgroundColor3 = Color3.fromRGB(255, 255, 255), Position = position, Size = size, Visible = Bar, ZIndex = 11})
+    end
+    --
+    local function CreateBarBackRound(name, position, size)
+        return CreateClass("Frame", {Parent = XDEDEADEDE, Name = name, BackgroundColor3 = Color3.fromRGB(0, 0, 0), Position = position, Size = size, Visible = Bar, ZIndex = 9})
+    end
+    --
+    local LeftTop = CreateCornerBox("LeftTop", UDim2.new(0, 0, 0, 0), UDim2.new(0, 0, 0, 1), Vector2.new(0, 0))
+    local LeftSide = CreateCornerBox("LeftSide", UDim2.new(0, 0, 0, 0), UDim2.new(0, 1, 0, 0), Vector2.new(0, 0))
+    local RightTop = CreateCornerBox("RightTop", UDim2.new(0, 0, 0, 0), UDim2.new(0, 0, 0, 1), Vector2.new(0, 0))
+    local RightSide = CreateCornerBox("RightSide", UDim2.new(0, 0, 0, 0), UDim2.new(0, 1, 0, 0), Vector2.new(0, 0))
+    local BottomSide = CreateCornerBox("BottomSide", UDim2.new(0, 0, 0, 0), UDim2.new(0, 1, 0, 0), Vector2.new(0, 0))
+    local BottomDown = CreateCornerBox("BottomDown", UDim2.new(0, 0, 0, 0), UDim2.new(0, 0, 0, 1), Vector2.new(0, 0))
+    local BottomRightSide = CreateCornerBox("BottomRightSide", UDim2.new(0, 0, 0, 0), UDim2.new(0, 1, 0, 0), Vector2.new(0, 0))
+    local BottomRightDown = CreateCornerBox("BottomRightDown", UDim2.new(0, 0, 0, 0), UDim2.new(0, 0, 0, 1), Vector2.new(0, 0))
+    local NameTag = CreateClass("TextLabel", {Parent = XDEDEADEDE, Name = "NameTag", BackgroundTransparency = 1, Font = Enum.Font.Code, TextColor3 = Color3.fromRGB(161,0,219), TextStrokeTransparency = 0, TextSize = 11, TextStrokeColor3 = Color3.fromRGB(0, 0, 0), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Visible = Names})
+    local WeaponText = CreateClass("TextLabel", { Parent = XDEDEADEDE, Name = "WeaponText", BackgroundTransparency = 1, Font = Enum.Font.Code, TextColor3 = Color3.fromRGB(161,0,219), TextStrokeTransparency = 0, TextSize = 11, TextStrokeColor3 = Color3.fromRGB(0, 0, 0), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 20), Visible = WeaponType})
+    local BarBackRound = CreateBarBackRound("BarBackRound", UDim2.new(0, 0, 0, 0), UDim2.new(0, 8, 0, 100))
+    local Bar = CreateBar("Bar", UDim2.new(0, 0, 0, 0), UDim2.new(0, 0, 0, 0))
+    local UIGradient = CreateClass("UIGradient", {Parent = Bar, Name = "UIGradient", Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(9, 255, 0)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 238, 0)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 4))}), Rotation = 90})
+    local Connection
+    Connection = BeamVar.RunService.RenderStepped:Connect(function()
+        if model and model.Parent and humanoidRootPart and humanoidRootPart.Parent then
+            if IsSleeping(model) then
+                LeftTop.Visible = false
+                LeftSide.Visible = false
+                BottomSide.Visible = false
+                BottomDown.Visible = false
+                RightTop.Visible = false
+                RightSide.Visible = false
+                BottomRightSide.Visible = false
+                BottomRightDown.Visible = false
+                NameTag.Visible = false
+                WeaponText.Visible = false
+                BarBackRound.Visible = false
+                Bar.Visible = false
+                return
+            end
+            --
+            local Pos, OnScreen = BeamVar.Camera:WorldToScreenPoint(humanoidRootPart.Position)
+            local Size = humanoidRootPart.Size.Y
+            local distance = math.floor((BeamVar.Camera.CFrame.Position - humanoidRootPart.Position).magnitude)
+            local scaleFactor = 12 / (Pos.Z * math.tan(math.rad(BeamVar.Camera.FieldOfView * 0.5)) * 2) * 100
+            local w, h = 3 * scaleFactor, 4.5 * scaleFactor
+            local HealthWidth = Calc(distance)
+            local WeaponFound = playertable.equippedItem and playertable.equippedItem.id or "None"
+            --
+            if OnScreen then
+                LeftTop.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y - h / 2)
+                LeftTop.Size = UDim2.new(0, w / 5, 0, 1)
+
+                LeftSide.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y - h / 2)
+                LeftSide.Size = UDim2.new(0, 1, 0, h / 5)
+
+                BottomSide.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y + h / 2 - h / 5)
+                BottomSide.Size = UDim2.new(0, 1, 0, h / 5)
+
+                BottomDown.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y + h / 2)
+                BottomDown.Size = UDim2.new(0, w / 5, 0, 1)
+
+                RightTop.Position = UDim2.new(0, Pos.X + w / 2 - w / 5, 0, Pos.Y - h / 2)
+                RightTop.Size = UDim2.new(0, w / 5, 0, 1)
+
+                RightSide.Position = UDim2.new(0, Pos.X + w / 2 - 1, 0, Pos.Y - h / 2)
+                RightSide.Size = UDim2.new(0, 1, 0, h / 5)
+
+                BottomRightSide.Position = UDim2.new(0, Pos.X + w / 2 - 1, 0, Pos.Y + h / 2 - h / 5)
+                BottomRightSide.Size = UDim2.new(0, 1, 0, h / 5)
+
+                BottomRightDown.Position = UDim2.new(0, Pos.X + w / 2 - w / 5, 0, Pos.Y + h / 2)
+                BottomRightDown.Size = UDim2.new(0, w / 5, 0, 1)
+
+                NameTag.Position = UDim2.new(0, Pos.X, 0, Pos.Y - h / 2 - 20)
+                WeaponText.Position = UDim2.new(0, Pos.X, 0, Pos.Y + h / 2 + 3)
+
+                BarBackRound.Position = UDim2.new(0, Pos.X - w / 2 - 10, 0, Pos.Y - h / 2)
+                BarBackRound.Size = UDim2.new(0, HealthWidth, 0, h)
+
+                local barHeight = (BarValue / 100) * h
+                Bar.Position = UDim2.new(0, Pos.X - w / 2 - 10, 0, Pos.Y + h / 2 - barHeight)
+                Bar.Size = UDim2.new(0, HealthWidth, 0, barHeight)      
+                
+                local username = model:FindFirstChild("Head") and model.Head:FindFirstChild("Nametag") and model.Head.Nametag.tag.Text or "Player"
+                NameTag.Text = (username or "Player") .. " [" .. distance .. "s]"
+
+                WeaponText.Text = "[" .. (WeaponFound:upper() or "Hands") .. "]"
+
+                local color = VisibilityState[model] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(161, 0, 219)
+
+                LeftTop.BackgroundColor3 = color
+                LeftSide.BackgroundColor3 = color
+                RightTop.BackgroundColor3 = color
+                RightSide.BackgroundColor3 = color
+                BottomSide.BackgroundColor3 = color
+                BottomDown.BackgroundColor3 = color
+                BottomRightSide.BackgroundColor3 = color
+                BottomRightDown.BackgroundColor3 = color
+                NameTag.TextColor3 = color
+                WeaponText.TextColor3 = color
+
+                LeftTop.Visible = CornerBoxes
+                LeftSide.Visible = CornerBoxes
+                RightTop.Visible = CornerBoxes
+                RightSide.Visible = CornerBoxes
+                BottomSide.Visible = CornerBoxes
+                BottomDown.Visible = CornerBoxes
+                BottomRightSide.Visible = CornerBoxes
+                BottomRightDown.Visible = CornerBoxes
+                NameTag.Visible = Names
+                WeaponText.Visible = WeaponType
+                BarBackRound.Visible = Bar
+                Bar.Visible = Bar
+            else
+                LeftTop.Visible = false
+                LeftSide.Visible = false
+                BottomSide.Visible = false
+                BottomDown.Visible = false
+                RightTop.Visible = false
+                RightSide.Visible = false
+                BottomRightSide.Visible = false
+                BottomRightDown.Visible = false
+                NameTag.Visible = false
+                WeaponText.Visible = false
+                BarBackRound.Visible = false
+                Bar.Visible = false
+            end
+        else
+            LeftTop.Visible = false
+            LeftSide.Visible = false
+            RightTop.Visible = false
+            RightSide.Visible = false
+            BottomSide.Visible = false
+            BottomDown.Visible = false
+            BottomRightSide.Visible = false
+            BottomRightDown.Visible = false
+            NameTag.Visible = false
+            WeaponText.Visible = false
+            BarBackRound.Visible = false
+            Bar.Visible = false
+        end
+
+        if not model then
+            LeftTop:Destroy()
+            LeftSide:Destroy()
+            RightTop:Destroy()
+            RightSide:Destroy()
+            BottomSide:Destroy()
+            BottomDown:Destroy()
+            BottomRightSide:Destroy()
+            BottomRightDown:Destroy()
+            NameTag:Destroy()
+            WeaponText:Destroy()
+            BarBackRound:Destroy()
+            Bar:Destroy()
+            if Connection then
+                Connection:Disconnect()
+            end
+        end
+    end)
+end
+
+local barValueIncrementTime = 5
+local resetBarValueTime = 1
+local lastIncrementTime = 0
+local lastResetTime = 0
+
+local function IncrementBarValue()
+    if BarValue < 100 then
+        BarValue = math.min(BarValue + 1, 100)
+    end
+end
+
+local function ResetLowBarValue()
+    if BarValue <= 1 then
+        BarValue = 100
+    end
+end
+
+local function onLogMessage(message)
+    local HealthAfr = message:match("->(%d+%.?%d*)hp")
+    if HealthAfr then
+        BarValue = math.floor(tonumber(HealthAfr))
+    end
+end
+
+BeamVar.LogService.MessageOut:Connect(onLogMessage)
+
+game:GetService("RunService").Heartbeat:Connect(LPH_NO_VIRTUALIZE(function()
+    local currentTime = tick()
+    if currentTime - lastIncrementTime >= barValueIncrementTime then
+        IncrementBarValue()
+        lastIncrementTime = currentTime
+    end
+    if currentTime - lastResetTime >= resetBarValueTime then
+        ResetLowBarValue()
+        lastResetTime = currentTime
+    end
+end))
+
+local Cache = {}
+for i,v in pairs(PlayerList) do
+    if v.model:FindFirstChild("HumanoidRootPart") and not table.find(Cache, v) then
+        table.insert(Cache, v)
+        ESP(v)
+    end
+end
+
+game:GetService("Workspace").ChildAdded:Connect(LPH_NO_VIRTUALIZE(function()
+    task.delay(1.5, function()
+        for i,v in pairs(PlayerList) do
+            if v.model:FindFirstChild("HumanoidRootPart") and not table.find(Cache, v) then
+                table.insert(Cache, v)
+                ESP(v)
+            end
+        end
+    end)
+end))
+--
+local Esp3 = Tabs.visuals:createGroup('left', 'Esp')
+--
+Esp3:addToggle({text = "Corner Boxes",default = false,flag = "CornerBoxes",callback = function(state)
+    CornerBoxes = state
+end})
+--
+Esp3:addToggle({text = "Names",default = false,flag = "Names",callback = function(state)
+    Names = state
+end})
+--
+Esp3:addToggle({text = "Weapon Type",default = false,flag = "WeaponType",callback = function(state)
+    WeaponType = state
+end})
+--
+Esp3:addToggle({text = "Health Bar",default = false,flag = "Bar",callback = function(state)
+    Bar = state
+end})
+--
+Esp3:addSlider({text = "Max Distance", min = 0, max = 1500, suffix = "%", float = 1, default = 0, flag = "MaxDistance",callback = function(Value)
+    MaxDistance = Value
+end}) 
+--
+local ws, uis, rs = game:GetService("Workspace"), game:GetService("UserInputService"), game:GetService("RunService")
+local cam, plr = ws.CurrentCamera, ws.Ignore.LocalCharacter
+local middle = plr.Middle
+--
+local SPEED = {
+	Enabled = false,
+	Hopping = false,
+	Speedk = false,
+	HoldShift = false,
+	HoldC = false,
+	Speed = 1,
+	Target = 40,
+	Start = 1,
+	Accel = 1,
+	Dir = Vector3.zero,
+	BounceY = 4.3,
+	State = "Down",
+	LastCF = middle.CFrame,
+	Func = nil
+}
+--
+_G._SpeedModule = SPEED
+--
+for _,v in next, getgc(true) do
+	if typeof(v) == "function" and debug.getinfo(v).name == "IsGrounded" then
+		SPEED.Func = v
+		break
+	end
+end
+--
+local function GetBounceHeight()
+	local pos = middle.Position
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+	rayParams.FilterDescendantsInstances = {ws.Ignore}
+	rayParams.IgnoreWater = true
+	local result = ws:Raycast(pos, Vector3.new(0, -10, 0), rayParams)
+	if result then
+		return math.clamp((pos - result.Position).Y + 0.5, 1.5, SPEED.BounceY)
+	end
+	return 3.5
+end
+--
+rs.RenderStepped:Connect(LPH_NO_VIRTUALIZE(function()
+	if SPEED.Enabled then
+		middle.Velocity += (cam.CFrame.LookVector * SPEED.Dir.Z + cam.CFrame.RightVector * SPEED.Dir.X) * SPEED.Speed
+	end
+end))
+--
+uis.InputBegan:Connect(LPH_NO_VIRTUALIZE(function(i, g)
+	if g then return end
+	local kc = i.KeyCode
+	if kc == Enum.KeyCode.LeftShift or kc == Enum.KeyCode.RightShift then SPEED.HoldShift = true end
+	if kc == Enum.KeyCode.C then SPEED.HoldC = true end
+	if SPEED.HoldShift and SPEED.HoldC then SPEED.Enabled, SPEED.Target = true, 40 end
+	if kc == Enum.KeyCode.H then SPEED.Enabled = not SPEED.Enabled end
+	if kc == Enum.KeyCode.W then SPEED.Dir += Vector3.new(0, 0, 1) end
+	if kc == Enum.KeyCode.S then SPEED.Dir += Vector3.new(0, 0, -1) end
+	if kc == Enum.KeyCode.A then SPEED.Dir += Vector3.new(-1, 0, 0) end
+	if kc == Enum.KeyCode.D then SPEED.Dir += Vector3.new(1, 0, 0) end
+end))
+--
+uis.InputEnded:Connect(LPH_NO_VIRTUALIZE(function(i, g)
+	if g then return end
+	local kc = i.KeyCode
+	if kc == Enum.KeyCode.LeftShift or kc == Enum.KeyCode.RightShift then SPEED.HoldShift = false end
+	if kc == Enum.KeyCode.C then SPEED.HoldC = false end
+	if not SPEED.HoldShift or not SPEED.HoldC then
+		SPEED.Enabled, SPEED.Speed, SPEED.Target = false, SPEED.Start, SPEED.Start
+	end
+	if kc == Enum.KeyCode.W then SPEED.Dir -= Vector3.new(0, 0, 1) end
+	if kc == Enum.KeyCode.S then SPEED.Dir -= Vector3.new(0, 0, -1) end
+	if kc == Enum.KeyCode.A then SPEED.Dir -= Vector3.new(-1, 0, 0) end
+	if kc == Enum.KeyCode.D then SPEED.Dir -= Vector3.new(1, 0, 0) end
+end))
+--
+task.spawn(function()
+	while true do
+		task.wait()
+		if SPEED.Func and not SPEED.Hopping and SPEED.Func() and middle.LinearVelocity.MaxAxesForce == Vector3.zero and middle.Velocity.Y <= 0.2 then
+			SPEED.Hopping, SPEED.Speedk, SPEED.State = true, true, "Up"
+			task.wait(GetBounceHeight() / 33)
+			SPEED.State = "Down"
+			SPEED.Speedk = false
+			task.wait(0.08)
+			SPEED.Hopping = false
+		end
+	end
+end)
+--
+rs.Heartbeat:Connect(function()
+	if SPEED.Enabled then
+		SPEED.Speed = math.min(SPEED.Speed + SPEED.Accel, SPEED.Target)
+	elseif SPEED.Speed > SPEED.Start then
+		SPEED.Speed = math.max(SPEED.Speed - SPEED.Accel, SPEED.Start)
+	end
+	if SPEED.Speedk then
+		SPEED.LastCF = middle.CFrame
+		local spoof = SPEED.LastCF
+		if SPEED.State == "Up" then
+			spoof += Vector3.new(0, GetBounceHeight(), 0)
+		end
+		if ws:Raycast(middle.Position, Vector3.new(0, -1, 0), RaycastParams.new()) then
+			spoof += Vector3.new(0, -0.5, 0)
+		end
+		middle.CFrame = spoof
+		rs.RenderStepped:Wait()
+		middle.CFrame = SPEED.LastCF
+	end
+end)
+--
+local spoof; spoof = hookmetamethod(game, "__index", LPH_NO_VIRTUALIZE(function(self, key)
+	if key == "CFrame" and self == middle and not checkcaller() and SPEED.Speedk then
+		return SPEED.LastCF
+	end
+	return spoof(self, key)
+end))
+--
+local SHack = Tabs.misc:createGroup('left', 'Speed Hack')
+SHack:addToggle({text = "Speed Hack",default = false,flag = "speed_hack_toggle",callback = function(state)
+    SPEED.Enabled = state
+end})
+SHack:addSlider({text = "Start Speed", min = 1, max = 25, suffix = "%", float = 1, default = 1, flag = "speed_hack_toggle",callback = function(Value)
+    SPEED.Speed = Value
+end})
+SHack:addSlider({text = "Max Speed", min = 1, max = 125, suffix = "%", float = 1, default = 1, flag = "max_speed",callback = function(Value)
+    SPEED.Target = Value
+end})
+SHack:addSlider({text = "acceleration Speed", min = 0, max = 3, suffix = "%", float = 0.1, default = 0.5, flag = "accleration_speed",callback = function(Value)
+    SPEED.Accel = Value
+end})
+--
+local lootall = false
+local depositall = false
+--
+SHack:addToggle({
+    text = "Loot All Bind",
+    default = true,
+    flag = "loot_all_toggle",
+    callback = function(state)
+    lootall = state
+    end
+}):addKeybind({
+    text = "Loot Bind",
+    type = "toggle",
+    key = Enum.KeyCode.F,
+    flag = "loot_all",
+    callback = function(state)
+        if state and lootall then
+            for i = 1, 20 do
+                game:GetService("Players").LocalPlayer.RemoteEvent:FireServer(12, i, true)
+            end
+        end
+    end
+})
+--
+SHack:addToggle({
+    text = "Deposit All Bind",
+    default = true,
+    flag = "deposit_all_toggle",
+    callback = function(state)
+        depositall = state
+    end
+}):addKeybind({
+    text = "Deposit All Bind",
+    type = "toggle",
+    key = Enum.KeyCode.Q,
+    flag = "deposit_all_keybind",
+    callback = function(state)
+        if state and depositall then
+            task.spawn(function()
+                for i = 1, 20 do
+                    task.wait(0.03)
+                    local ohNumber1 = 12
+                    local ohNumber2 = i
+                    local ohBoolean3 = false
+                    game:GetService("Players").LocalPlayer.RemoteEvent:FireServer(ohNumber1, ohNumber2, ohBoolean3)
+                end
+            end)
+        end
+    end
+})
+--
+local SkinChoice, SkinsEnabled = "Blackout", false
+--
+function GetEquippedGunName()
+    local equippedItem = modules.FPS.GetEquippedItem()
+    if equippedItem then
+        return equippedItem.id 
+    end
+    return nil
+end
+--
+local SkinTextures = {
+    Lightning = "rbxassetid://6555500992",
+    Galaxy = "rbxassetid://9305457875",
+    Swirl = "rbxassetid://13199296652",
+    Wavey = "rbxassetid://13898657945",
+    RedGalaxy = "rbxassetid://1619172543",
+    Marble = "rbxassetid://8904067198",
+    Lava = "rbxassetid://7077560268",
+    Blackout = "rbxassetid://5847588525",
+    Snake = "rbxassetid://7457460026",
+    Banana = "rbxassetid://338693178",
+    Death = "rbxassetid://11896030190",
+    Doggo = "rbxassetid://72018952255995",
+    Ocean = "rbxassetid://77526596429738",
+    bypassdev = "rbxassetid://77571754110463"
+}
+--
+local function SkinChanger(SkinName)
+    local GunName = GetEquippedGunName()
+    if not GunName or not ReplicatedStorage.ItemSkins:FindFirstChild(GunName) then return end
+    local SkinFolder = ReplicatedStorage.ItemSkins[GunName]
+    local AnimationModule = SkinFolder:FindFirstChild("AnimatedSkinPrefab") and require(SkinFolder.AnimatedSkinPrefab)
+    local TextureId = SkinTextures[SkinName]
+    if AnimationModule and TextureId then
+        local Speed = (SkinName == "Banana") and 2 or 1
+        local Scale = (SkinName == "Marble") and 0.01 or 0.3
+        local clonedApplyToModel = clonefunction(AnimationModule.ApplyToModel)
+        clonedApplyToModel(Workspace.Ignore.FPSArms.HandModel, TextureId, Speed, Scale)
+    end
+end
+--
+local function OnChildAdded()
+    if SkinsEnabled then
+        local HandModel = Workspace.Ignore.FPSArms:WaitForChild("HandModel", 3)
+        if HandModel then
+            SkinChanger(SkinChoice)
+        end
+    end
+end
+--
+Workspace.Ignore.FPSArms.ChildAdded:Connect(clonefunction(OnChildAdded))
+--
+local sChanger = Tabs.misc:createGroup('right', 'Skin Changer')
+--
+sChanger:addToggle({text = "Skin Changer",default = false,flag = "skin_changer_toggle",callback = function(state)
+    SkinsEnabled = state
+end})
+--
+sChanger:addList({text = "Skin Selection",multiselect = false,values = {"Galaxy", "Lightning", "Swirl", "Wavey", "RedGalaxy", "Marble", "Lava", "Snake", "Banana", "Death"},flag = "skin_changer_options",callback = function(state)
+    SkinChoice = state
+end})
+--
+local Lighting = game:GetService("Lighting")
+
+local DesiredColor = Color3.fromRGB(255, 255, 255)
+local ambientenabled = false
+local color = ambientenabled and DesiredColor or Lighting.Ambient 
+if ambientenabled then 
+    color = DesiredColor
+end
+
+local ambientFunc = {
+    TimeOfDay = Lighting.TimeOfDay,
+    Ambient = Lighting.Ambient,
+    GlobalShadows = Lighting.GlobalShadows,
+    ColorShift_Top = Lighting.ColorShift_Top,
+    ColorShift_Bottom = Lighting.ColorShift_Bottom,
+    FogEnd = Lighting.FogEnd,
+    FogStart = Lighting.FogStart,
+    FogColor = Lighting.FogColor,
+}
+
+local SpoofedAmbient2; SpoofedAmbient2 = hookmetamethod(game, "__index", newcclosure(function(self, string)
+    if checkcaller() then 
+        return SpoofedAmbient2(self, string, value)
+    end
+    if self == Lighting and ambientFunc[string] then
+        return ambientFunc[string]
+    end
+    return SpoofedAmbient2(self, string)
+end))
+
+local SpoofedAmbient1; SpoofedAmbient1 = hookmetamethod(game, "__newindex", newcclosure(function(self, string, value)
+    if checkcaller() then 
+        return SpoofedAmbient1(self, string, value)
+    end
+    if self == Lighting then
+        ambientFunc[string] = value
+        if string == "Ambient" then
+            color = ambientenabled and DesiredColor or value
+            return SpoofedAmbient1(self, string, color)
+        end
+    end
+    return SpoofedAmbient1(self, string, value)
+end))
+
+local WorldVisuals = Tabs.world:createGroup('left', 'World')
+
+WorldVisuals:addToggle({text = "Ambient",default = false,flag = "Ambient",callback = function(state)
+    ambientenabled = state
+end}) 
+
+WorldVisuals:addColorpicker({text = "Ambient Color", ontop = false, flag = "DesiredColor", color = Color3.fromRGB(255, 255, 255), callback = function(Value)
+    DesiredColor = Value
+end})
+
+------ FieldOfView ------
+local camera = game.Workspace.CurrentCamera
+local default_fov = 70
+local zoom = 120
+local zoom_enabled = false
+local zoom_amount = 30
+local FovEnabled = false
+local fovFunc = {
+    FieldOfView = camera.FieldOfView
+}
+--
+local SpoofedFov2; SpoofedFov2 = hookmetamethod(game, "__index", newcclosure(function(self, string)
+    if checkcaller() then
+        return SpoofedFov2(self, string)
+    end
+    if self == camera and fovFunc[string] then
+        return fovFunc[string]
+    end
+    return SpoofedFov2(self, string)
+end))
+--
+local SpoofedFov1; SpoofedFov1 = hookmetamethod(game, "__newindex", newcclosure(function(self, string, value)
+    if checkcaller() then
+        return SpoofedFov1(self, string, value)
+    end
+    if self == camera then
+        fovFunc[string] = value
+        if string == "FieldOfView" and FovEnabled then
+            return SpoofedFov1(self, string, default_fov)
+        end
+    end
+    return SpoofedFov1(self, string, value)
+end))
+--
+local FeildOfView = Tabs.visuals:createGroup('left', 'FeildOfView')
+--
+FeildOfView:addToggle({text = "Field Of View",default = false,flag = "Field_of_View",callback = function(state)
+    FovEnabled = state
+end}) 
+--
+FeildOfView:addSlider({text = "FeildOfView", min = 1, max = 120, suffix = "%", float = 1, default = 70, flag = "view",callback = function(Value)
+    default_fov = Value
+end})
+--
+
+
+--// UI Settings \\--
+local gameTab = Tabs.settings:createGroup('left', 'Game')
+--// Game \\-- 
+do
+gameTab:addToggle({text = "Menu Bind",default = true,flag = "MenuBind_Toggle",callback = function(state)
+end}):addKeybind({text = "Menu Bind",type = "toggle",key = Enum.KeyCode.K,flag = "menubindkeybind_toggle",callback = function(state)
+Library.keybind = state
+end})
+gameTab:addButton({text = "Copy Join Code",callback = function(state)
+setclipboard(("game:GetService('TeleportService'):TeleportToPlaceInstance(%s, '%s')"):format(game.PlaceId, game.JobId))
+Library:Notify("Visuals.Wtf - succesfully copied join code!", 5)
+end})
+gameTab:addButton({text = "rejoin",callback = function(Value)
+game:GetService('TeleportService'):TeleportToPlaceInstance(game.PlaceId, game.JobId)
+library:Notify("Visuals.Wtf - succesfully rejoining server!", 5)
+end})
+end
+
+local createConfigs = Tabs.settings:createGroup('right', 'Configs')
+
+do --// Configs \\--
+createConfigs:addTextbox({text = "Name:",flag = "config_name"})
+createConfigs:addButton({text = "Create",callback = Library.createConfig})
+createConfigs:addConfigbox({flag = 'config_box',values = {}})
+createConfigs:addButton({text = "Load",callback = Library.loadConfig})
+createConfigs:addButton({text = "Overwrite",callback = Library.saveConfig})
+createConfigs:addButton({text = "Refresh",callback = function(refresh) Library:refreshConfigs(refresh) Library:Notify("Succesfully: refreshed all cfg's!", 5) end})
+createConfigs:addButton({text = "Delete",callback = Library.deleteConfig})
+end; 
+
+Library:refreshConfigs()
+Library:Notify(string.format("Success: script loaded in %.2fs", os.clock() - OsClock),15)
+end
