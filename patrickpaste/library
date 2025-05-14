@@ -6,7 +6,7 @@ repeat
     makefolder("Visuals.Wtf")
   end
   
-  local menu = game:GetObjects("rbxassetid://134056772991940")[1] 
+  local menu = game:GetObjects("rbxassetid://")[1] 
   local tabholder = menu.BG.TabList;
   local tabviewer = menu.BG.Tabs;
   for _, obj in pairs(menu:GetDescendants()) do
